@@ -1,36 +1,57 @@
-# RustyNinja - A stealthy file exfiltrader tool
->[!WARNING]
->Beware this is really really shitty and ugly code that by some miracle works. Basically a learn-rust-project for me.
+# RustyNinja - A Stealthy File Exfiltration Tool
 
-A (in spirit) rust version of NinjaCopy(https://github.com/PowerShellMafia/PowerSploit/blob/master/Exfiltration/Invoke-NinjaCopy.ps1).
+> [!WARNING]
+> Beware, this is really, really shitty and ugly code that by some miracle works. Basically a learn-rust-project for me.
 
-This tool lets you, if you have obtained **Admin privileges**, access and copy otherwise locked files like registry database files(SYSTEM, SAM, SECURITY) or NTDS.dit. 
-This is done by opening a read handle to the entire NTFS volume and then by parsing the structure independently. 
+A (in spirit) Rust version of [NinjaCopy](https://github.com/PowerShellMafia/PowerSploit/blob/master/Exfiltration/Invoke-NinjaCopy.ps1).
 
->[!TIP]
->Accessing registry databases and NTDS.dit this way may(might/hopefully/test it goddamn it!) bypass EDR/detection which would be lovely during red team assignments. Other methods such as using ntdsutil, disk shadow, reg save or via RPC can be way too **noisy**.
+This tool lets you, if you have obtained **Admin privileges**, access and copy otherwise locked files like registry database files (SYSTEM, SAM, SECURITY) or NTDS.dit. This is done by opening a read handle to the entire NTFS volume and then parsing the structure independently.
 
+> [!TIP]
+> Accessing registry databases and NTDS.dit this way may (might/hopefully/test it goddamn it!) bypass EDR/detection, which would be lovely during red team assignments. Other methods such as using ntdsutil, disk shadow, reg save, or via RPC can be way too **noisy**.
 
-I have added an additional detection bypass which XOR's the file content in memory before writing it to desk. The output filename has a randomly generated filename just in case. 
+I have added an additional detection bypass which XORs the file content in memory before writing it to disk. The output filename has a randomly generated filename just in case.
 
-If you don't want to XOR the file content for some reason, just give it 0x00 as the XOR byte.
+If you don't want to XOR the file content for some reason, just give it `0x00` as the XOR byte.
 
-The program takes two arguments.
+## Compiling
+```sh
+rustup target add x86_64-pc-windows-gnu
+cargo build --release --target x86_64-pc-windows-gnu
+```
 
-Using RustyNinja:
-~~~rust
+## Usage
+
+The program takes two arguments:
+
+1. **Volume Path**: The path to the NTFS volume containing the file to copy.
+2. **XOR Key**: A hex value to XOR the data with.
+
+### Example
+
+```sh
 rustyninja.exe [path to file to copy] [hex value to Xor data with]
 
-Example: 
+Example: rustyninja.exe c:\windows\system32\config\SYSTEM 0x33
 
-C:\Users\a\rustyninja.exe c:\windows\system32\config\SYSTEM 0x33
+Xoring and saving 20185088 bytes of data to: tySXLjFMRndoxTuq.bin
+```
 
-Xoring and saving 20185088 bytes of data to: tySXLjFMRndoxTuq
-~~~
+## Xor decoder
 
-Compiling:
-~~~rust
-cargo build --release
-~~~
+The script will create a new file with the .out extension containing the decoded content.
+
+```sh
+python de-xor.py tySXLjFMRndoxTuq.bin 0x33
+```
+
+## Testing Validity of SYSTEM Hive
+
+To test the validity of the extracted SYSTEM hive, you can use the regripper tool:
+```sh
+regripper -r tySXLjFMRndoxTuq.bin.out -f system
+```
+
+Big Thanks and Inspiration
 
 Big thanks and inspiration from Colin Finck who created the NTFS implementation in Rust.
