@@ -1,57 +1,71 @@
 # RustyNinja - A Stealthy File Exfiltration Tool
 
 > [!WARNING]
-> Beware, this is really, really shitty and ugly code that by some miracle works. Basically a learn-rust-project for me.
+> This tool is a work-in-progress and was built as a **learn-Rust** project. The code is rough and not production-ready. Use it at your own risk, and feel free to contribute or suggest improvements!
 
-A (in spirit) Rust version of [NinjaCopy](https://github.com/PowerShellMafia/PowerSploit/blob/master/Exfiltration/Invoke-NinjaCopy.ps1).
+RustyNinja is a Rust-based tool for **stealthily exfiltrating locked files** from an NTFS volume, inspired by the [NinjaCopy](https://github.com/PowerShellMafia/PowerSploit/blob/master/Exfiltration/Invoke-NinjaCopy.ps1) PowerShell script. 
 
-This tool lets you, if you have obtained **Admin privileges**, access and copy otherwise locked files like registry database files (SYSTEM, SAM, SECURITY) or NTDS.dit. This is done by opening a read handle to the entire NTFS volume and then parsing the structure independently.
+If you have **Admin privileges**, RustyNinja allows you to access and copy files that are typically locked by the OS (such as registry hives: `SYSTEM`, `SAM`, `SECURITY`, or `NTDS.dit`). The tool works by opening a read handle to the NTFS volume and parsing the filesystem structure directly, bypassing file locks and restrictions.
 
 > [!TIP]
-> Accessing registry databases and NTDS.dit this way may (might/hopefully/test it goddamn it!) bypass EDR/detection, which would be lovely during red team assignments. Other methods such as using ntdsutil, disk shadow, reg save, or via RPC can be way too **noisy**.
+> Copying sensitive files this way may help bypass certain Endpoint Detection and Response (EDR) solutions, making it useful for red team engagements. Traditional methods like `ntdsutil`, `diskshadow`, `reg save`, or RPC can be quite noisy, while RustyNinja attempts to be more discreet.
 
-I have added an additional detection bypass which XORs the file content in memory before writing it to disk. The output filename has a randomly generated filename just in case.
+### Key Features:
+- **Bypass File Locks**: Extract locked files from NTFS volumes, even if they're in use by the system.
+- **XOR Encryption**: Optionally XOR the file content in-memory before writing it to disk for detection evasion.
+- **Randomized Output Filenames**: Each output file is given a randomly generated name for added stealth.
+- **Flexible XOR Key**: If you don't need encryption, simply use `0x00` as the XOR byte to copy the file as-is.
 
-If you don't want to XOR the file content for some reason, just give it `0x00` as the XOR byte.
+## 🛠️ Compiling
 
-## Compiling
-```sh
+To compile RustyNinja for Windows:
+
+```bash
 rustup target add x86_64-pc-windows-gnu
 cargo build --release --target x86_64-pc-windows-gnu
 ```
+This will create a release binary targeting Windows.
 
-## Usage
+## 🚀 Usage
 
-The program takes two arguments:
+RustyNinja requires two arguments:
 
-1. **Volume Path**: The path to the NTFS volume containing the file to copy.
-2. **XOR Key**: A hex value to XOR the data with.
+    1. Volume Path: Path to the NTFS volume containing the file you want to copy.
+    2. XOR Key: A hex value used to XOR the file's content.
 
-### Example
+Example:
 
 ```sh
-rustyninja.exe [path to file to copy] [hex value to Xor data with]
+rustyninja.exe [volume path] [XOR hex value]
 
-Example: rustyninja.exe c:\windows\system32\config\SYSTEM 0x33
+Example: 
+rustyninja.exe c:\windows\system32\config\SYSTEM 0x33
 
+Output: 
 Xoring and saving 20185088 bytes of data to: tySXLjFMRndoxTuq.bin
 ```
+    Note: If you want to skip the XOR operation and copy the file directly, pass 0x00 as the XOR key.
 
-## Xor decoder
+## 🔄 XOR Decoder
 
-The script will create a new file with the .out extension containing the decoded content.
+If you have XORed the file content, use the following Python script to decode it back:
 
 ```sh
 python de-xor.py tySXLjFMRndoxTuq.bin 0x33
 ```
 
-## Testing Validity of SYSTEM Hive
+This will create a .out file with the decoded content.
 
-To test the validity of the extracted SYSTEM hive, you can use the regripper tool:
+## 🧪 Verifying the SYSTEM Hive
+
+To verify the integrity of the extracted SYSTEM hive, you can use the RegRipper tool:
+
 ```sh
 regripper -r tySXLjFMRndoxTuq.bin.out -f system
 ```
 
-Big Thanks and Inspiration
+This will parse the SYSTEM hive and verify its validity.
+
+## 🙌 Acknowledgements
 
 Big thanks and inspiration from Colin Finck who created the NTFS implementation in Rust.
