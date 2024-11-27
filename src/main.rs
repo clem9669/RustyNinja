@@ -31,7 +31,7 @@ where
 {
     current_directory: Vec<NtfsFile<'n>>, // Current directory files
     fs: T,                                // Filesystem reader
-    ntfs: &'n Ntfs,                      // NTFS instance
+    ntfs: &'n Ntfs,                       // NTFS instance
 }
 
 fn main() -> Result<()> {
@@ -89,6 +89,7 @@ where
     // Convert the entry to a file and update the current directory
     let file = entry.to_file(info.ntfs, &mut info.fs)?;
     info.current_directory.push(file);
+
     Ok(())
 }
 
@@ -107,7 +108,8 @@ where
     };
 
     // Open the output file for writing
-    let mut output_file = OpenOptions::new().write(true).create_new(true).open(&out_file).with_context(|| format!("Failed to open file for writing"))?;
+    let mut output_file = OpenOptions::new().write(true).create_new(true).open(&out_file)
+        .with_context(|| format!("Failed to open file for writing"))?;
 
     // Find the target file
     let file = filearg(file_name, info)?;
@@ -120,7 +122,6 @@ where
             return Ok(());
         }
     };
-
     let data_item = data_item?;
     let data_attribute = data_item.to_attribute()?;
     let mut data_value = data_attribute.value(&mut info.fs)?;
@@ -146,11 +147,11 @@ where
     } else {
         println!("Couldn't xor the data.");
     }
+
     Ok(())
 }
 
 // Function to find a file by name
-#[allow(clippy::from_str_radix_10)]
 fn filearg<'n, T>(arg: &str, info: &mut CommandInfo<'n, T>) -> Result<NtfsFile<'n>>
 where
     T: Read + Seek,
